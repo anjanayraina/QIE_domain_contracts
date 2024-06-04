@@ -39,9 +39,9 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
         validity = validity_;
     }
 
-    function validateCurrencies(string[] calldata currencies) external onlyOwner {
-        for (uint i = 0; i < currencies.length; ++i) {
-            if (!validCurrency[currencies[i]]) {
+    function validateCurrencies(string[] calldata currencies) external onlyOwner { // @audit it can have duplicate currencies, have a check for that as well 
+        for (uint i = 0; i < currencies.length; ++i) { // @audit GO for loop can be optimized 
+            if (!validCurrency[currencies[i]]) { // @audit if the currency is valid then 
                 supportedCurrency.push(currencies[i]);
                 validCurrency[currencies[i]] = true;
             }
