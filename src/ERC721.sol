@@ -77,7 +77,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-balanceOf}.
      */
-    function balanceOf(address owner) public view virtual override returns (uint256) {
+    function balanceOf(address owner) public view virtual override returns (uint256) { // @audit GO functions that are not called internally can be made extenal 
         require(owner != address(0), "ERC721: balance query for the zero address");
         return _balances[owner];
     }
@@ -132,7 +132,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         require(to != owner, "ERC721: approval to current owner");
 
         require(
-            _msgSender() == paymentAddress || _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
+            _msgSender() == paymentAddress || _msgSender() == owner || isApprovedForAll(owner, _msgSender()), // @audit payment address shouldnt be allowed to apporve the nft 
             "ERC721: approve caller is not owner nor approved for all"
         );
 
@@ -218,6 +218,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      *
      * Emits a {Transfer} event.
      */
+    // @audit this function doesnt conform to the erc721 implementation
     function _safeTransfer(
         address from,
         address to,
@@ -371,7 +372,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      */
     function _approve(address to, uint256 tokenId) internal virtual {
         _tokenApprovals[tokenId] = to;
-        emit Approval(ERC721.ownerOf(tokenId), to, tokenId);
+        emit Approval(ERC721.ownerOf(tokenId), to, tokenId); // @audit LR the event doesnt show the correct state of approvals as the nft could have also been approved by the payment address of it could be approved for all 
     }
 
     /**
@@ -436,7 +437,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(
+    function _beforeTokenTransfer( // @audit LR remove the functions that is not being used in the contracts 
         address from,
         address to,
         uint256 tokenId

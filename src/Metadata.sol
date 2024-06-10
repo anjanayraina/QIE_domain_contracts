@@ -6,7 +6,7 @@ import './IRootRegistry.sol';
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
+contract Metadata is OwnableUpgradeable,UUPSUpgradeable { // @audit LR use two step ownable for owner change in the upgradable contracts 
     mapping(uint256 => mapping(string => address)) private addressDetails;
     string[] public supportedCurrency; 
     mapping(string => bool) public validCurrency;
@@ -33,7 +33,9 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
 
     function initialize(address registryAddress_, address paymentAddress_, uint validity_) initializer public {
         __Ownable_init();
-        __UUPSUpgradeable_init();
+        __UUPSUpgradeable_init(); 
+        // @audit Low add the basic checks for the addresses 
+        
         registryAddress = registryAddress_;
         paymentAddress = paymentAddress_;
         validity = validity_;
@@ -41,7 +43,8 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
 
     function validateCurrencies(string[] calldata currencies) external onlyOwner { // @audit it can have duplicate currencies, have a check for that as well 
         for (uint i = 0; i < currencies.length; ++i) { // @audit GO for loop can be optimized 
-            if (!validCurrency[currencies[i]]) { // @audit if the currency is valid then 
+            // @audit GO currency[i] can be cached to reduce the gas cost 
+            if (!validCurrency[currencies[i]]) { 
                 supportedCurrency.push(currencies[i]);
                 validCurrency[currencies[i]] = true;
             }
@@ -50,6 +53,7 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
 
     function validateMetadata(string[] calldata keys) external onlyOwner {
         for (uint i = 0; i < keys.length; ++i) {
+            // @audit GO keys[i] can be cached to reduce the gas cost 
             if (!validMetadata[keys[i]]) {
                 supportedMetadata.push(keys[i]);
                 validMetadata[keys[i]] = true;
@@ -58,9 +62,10 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
     }
 
     function addAddress(string calldata label, string[] calldata currency, address[] calldata currencyAddress) external {
+        // @audit GO can cache the lenght before hand, this will help reduce the gas cost in reverting and valid transvtions 
         require(currency.length == currencyAddress.length, "Metadata:Wrong input");
         (uint256 tokenId, address owner) = IRootRegistry(registryAddress).resolver(label);
-        require(msg.sender == owner, "Metadata:Access denied");
+        require(msg.sender == owner, "Metadata:Access denied"); // @audit LR also add msg.sender == owner() as its in the other functions that metadata 
         for (uint i = 0; i < currency.length; ++i) {
             require(validCurrency[currency[i]], "Metadata:Invalid currency");
             addressDetails[tokenId][currency[i]] = currencyAddress[i];
@@ -72,7 +77,7 @@ contract Metadata is OwnableUpgradeable,UUPSUpgradeable {
         (uint256 tokenId, address domainOwner) = IRootRegistry(registryAddress).resolver(domain);
         require(msg.sender == owner() || msg.sender == domainOwner, "Metadata:Access denied");
         for (uint i = 0; i < keys.length; ++i) {
-            require(validMetadata[keys[i]], "Metadata:Invalid key");
+            require(validMetadata[keys[i]], "Metadata:Invalid key"); // @audit GO consider adding custom reverts for saving gas 
             metadata[tokenId][keys[i]] = values[i];
         }
     }

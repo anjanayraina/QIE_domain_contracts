@@ -17,7 +17,7 @@ library ECDSAUpgradeable {
         InvalidSignature,
         InvalidSignatureLength,
         InvalidSignatureS,
-        InvalidSignatureV
+        InvalidSignature
     }
 
     function _throwError(RecoverError error) private pure {

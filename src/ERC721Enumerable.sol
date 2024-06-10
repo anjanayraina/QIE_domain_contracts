@@ -74,7 +74,7 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
         address to,
         uint256 tokenId
     ) internal virtual override {
-        super._beforeTokenTransfer(from, to, tokenId);
+        super._beforeTokenTransfer(from, to, tokenId); // @audit call to an empty function , you can just remove it 
 
         if (from == address(0)) {
             _addTokenToAllTokensEnumeration(tokenId);

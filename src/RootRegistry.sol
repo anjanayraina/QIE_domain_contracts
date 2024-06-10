@@ -80,10 +80,11 @@ import './IZone.sol';
     {
       require(msg.sender == paymentAddress || msg.sender == minterAddress,'Registry:Access denied');
       require(zones[order.zone] != address(0),'Registry:Zone not exist');
-      require(bytes(userDomain[order.owner]).length == 0,'Registry:User domain minted');
+      require(bytes(userDomain[order.owner]).length == 0,'Registry:User domain minted'); 
+      //@audit check for the order.parentID !=1 as its reseved for burned tokens 
 
       uint PTokenId = parentTokenId[order.parent];
-      uint nameHash = uint(_namehash(order.label,order.parent));
+      uint nameHash = uint(_namehash(order.label,order.parent)); 
       string memory fqn;
       address zoneAddress = zones[order.parent];
       if(zoneAddress == address(0)){
@@ -114,7 +115,7 @@ import './IZone.sol';
 
     function domainTransfer(address to_, uint tokenid_) external {
       require(msg.sender == domainMetadata[tokenid_].zoneAddress, 'Registry:Access denied');
-      require(bytes(userDomain[to_]).length == 0,'Registry:User domain minted');
+      require(bytes(userDomain[to_]).length == 0,'Registry:User domain minted'); // @audit GO can use custom revert errors to save on gas cost 
 
       delete userDomain[domainMetadata[tokenid_].owner];
       domainMetadata[tokenid_].owner = to_;
@@ -130,7 +131,7 @@ import './IZone.sol';
     }
 
 
-    function domainBurn(string calldata label_, string calldata zone_) external{ 
+    function domainBurn(string calldata label_, string calldata zone_) external{ // @audit Med after burning of the domain, the mintedDomainNames , mintedDomainOwners arrays and the existingDomain mapping is not updated leading to inconsistent state  
         uint _tokenId = parentTokenId[label_];
         require(msg.sender == domainMetadata[_tokenId].owner, 'Registry:Access Denied');
 
@@ -196,9 +197,9 @@ import './IZone.sol';
       else return false;
     }
     
-    function _addZones(string[] memory zone, address[] memory zoneAddress_) private {
+    function _addZones(string[] memory zone, address[] memory zoneAddress_) private { // @audit can make this calldata from memory 
       require(zone.length == zoneAddress_.length,'Registry:invalid input');
-      uint length = zone.length;
+      uint length = zone.length; // @audit Go cache the length above the check so that it doesnt need to be accessed again 
       
       for(uint i;i<length;++i){
       uint tokenID = uint(_namehash(zone[i],'0'));
@@ -209,7 +210,7 @@ import './IZone.sol';
     }
 
     function _namehash(string memory label, string memory parent) private pure returns(bytes32){
-        return keccak256(abi.encodePacked(parent, label));
+        return keccak256(abi.encodePacked(parent, label)); //@audit Med the values can collide . Refrence : https://solodit.xyz/issues/m-1-abiencodepacked-allows-hash-collision-sherlock-nftport-nftport-git
     }
  
  }
